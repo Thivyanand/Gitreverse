@@ -1,0 +1,44 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import type { RepositoryAnalysis } from "./types.js";
+
+export async function writeAnalysis(
+  analysis: RepositoryAnalysis,
+  outputRoot: string
+): Promise<string> {
+  await mkdir(outputRoot, { recursive: true });
+  const outputFile = path.join(outputRoot, "repository.json");
+
+  await writeFile(
+    outputFile,
+    JSON.stringify(
+      {
+        ...analysis,
+        root: undefined
+      },
+      null,
+      2
+    ).replace(/\n\s*"root": undefined,?/g, ""),
+    "utf8"
+  );
+
+  return outputFile;
+}
+
+export function printAnalysis(analysis: RepositoryAnalysis): void {
+  const languages = Object.entries(analysis.languages)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => `${name} (${count})`)
+    .join(", ") || "None detected";
+
+  console.log("");
+  console.log("GitReverse Analysis");
+  console.log("───────────────────");
+  console.log(`Repository:      ${analysis.repository.owner}/${analysis.repository.repo}`);
+  console.log(`Files:           ${analysis.fileCount}`);
+  console.log(`Languages:       ${languages}`);
+  console.log(`Framework:       ${analysis.framework ?? "Not detected"}`);
+  console.log(`Package manager: ${analysis.packageManager ?? "Not detected"}`);
+  console.log(`Dependencies:    ${analysis.dependencies.length}`);
+  console.log("");
+}
