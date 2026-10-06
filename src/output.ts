@@ -9,16 +9,11 @@ export async function writeAnalysis(
   await mkdir(outputRoot, { recursive: true });
   const outputFile = path.join(outputRoot, "repository.json");
 
+  const { root: _root, ...serializable } = analysis;
+
   await writeFile(
     outputFile,
-    JSON.stringify(
-      {
-        ...analysis,
-        root: undefined
-      },
-      null,
-      2
-    ).replace(/\n\s*"root": undefined,?/g, ""),
+    JSON.stringify(serializable, null, 2) + "\n",
     "utf8"
   );
 
