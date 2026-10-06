@@ -1,0 +1,25 @@
+{
+  "name": "gitreverse",
+  "version": "0.1.0",
+  "description": "Reverse-engineer GitHub repositories into AI-ready project specifications.",
+  "type": "module",
+  "bin": {
+    "gitreverse": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc",
+    "start": "node dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^14.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
