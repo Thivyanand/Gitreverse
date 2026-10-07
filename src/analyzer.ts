@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { RepositoryAnalysis } from "./types.js";
+import { analyzeCodeFile } from "./code-intelligence.js";
 
 const IGNORED = new Set([
   ".git",
@@ -137,6 +138,9 @@ export async function analyzeRepository(
 
   const { dependencies, packageManager } = await readJsonDependencies(root);
   const framework = detectFramework(files, dependencies);
+  const codeFiles = (await Promise.all(
+    files.map((file) => analyzeCodeFile(root, file))
+  )).filter((file): file is NonNullable<typeof file> => file !== null);
 
   return {
     repository,
@@ -148,6 +152,7 @@ export async function analyzeRepository(
     languages,
     framework,
     packageManager,
-    dependencies
+    dependencies,
+    codeFiles
   };
 }
