@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { RepositoryAnalysis } from "./types.js";
-import { analyzeCodeFile } from "./code-intelligence.js";
+import { analyzeCodeFile } from "./code-intelligence.js";\nimport { buildDependencyGraph } from "./dependency-graph.js";\nimport { buildArchitectureModel } from "./architecture.js";
 
 const IGNORED = new Set([
   ".git",
