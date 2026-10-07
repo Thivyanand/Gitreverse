@@ -38,6 +38,6 @@ export function printAnalysis(analysis: RepositoryAnalysis): void {
   console.log(`Code files:      ${analysis.codeFiles.length}`);
   console.log(`Symbols:         ${analysis.codeFiles.reduce((total, file) => total + file.symbols.length, 0)}`);
   console.log(`Imports:         ${analysis.codeFiles.reduce((total, file) => total + file.imports.length, 0)}`);
-  console.log(`Exports:         ${analysis.codeFiles.reduce((total, file) => total + file.exports.length, 0)}`);
+  console.log(`Exports:         ${analysis.codeFiles.reduce((total, file) => total + file.exports.length, 0)}`);\n  console.log(`Graph nodes:     ${analysis.dependencyGraph.nodes.length}`);\n  console.log(`Graph edges:     ${analysis.dependencyGraph.edges.length}`);\n  console.log(`Entry points:    ${analysis.architecture.entryPoints.length}`);\n  console.log(`Components:      ${analysis.architecture.connectedComponents.length}`);
   console.log("");
 }
