@@ -35,5 +35,9 @@ export function printAnalysis(analysis: RepositoryAnalysis): void {
   console.log(`Framework:       ${analysis.framework ?? "Not detected"}`);
   console.log(`Package manager: ${analysis.packageManager ?? "Not detected"}`);
   console.log(`Dependencies:    ${analysis.dependencies.length}`);
+  console.log(`Code files:      ${analysis.codeFiles.length}`);
+  console.log(`Symbols:         ${analysis.codeFiles.reduce((total, file) => total + file.symbols.length, 0)}`);
+  console.log(`Imports:         ${analysis.codeFiles.reduce((total, file) => total + file.imports.length, 0)}`);
+  console.log(`Exports:         ${analysis.codeFiles.reduce((total, file) => total + file.exports.length, 0)}`);
   console.log("");
 }
