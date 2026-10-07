@@ -1,7 +1,9 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { RepositoryAnalysis } from "./types.js";
-import { analyzeCodeFile } from "./code-intelligence.js";\nimport { buildDependencyGraph } from "./dependency-graph.js";\nimport { buildArchitectureModel } from "./architecture.js";
+import { analyzeCodeFile } from "./code-intelligence.js";
+import { buildDependencyGraph } from "./dependency-graph.js";
+import { buildArchitectureModel } from "./architecture.js";
 
 const IGNORED = new Set([
   ".git",
@@ -141,6 +143,8 @@ export async function analyzeRepository(
   const codeFiles = (await Promise.all(
     files.map((file) => analyzeCodeFile(root, file))
   )).filter((file): file is NonNullable<typeof file> => file !== null);
+  const dependencyGraph = buildDependencyGraph(codeFiles);
+  const architecture = buildArchitectureModel(dependencyGraph);
 
   return {
     repository,
@@ -153,6 +157,8 @@ export async function analyzeRepository(
     framework,
     packageManager,
     dependencies,
-    codeFiles
+    codeFiles,
+    dependencyGraph,
+    architecture
   };
 }
