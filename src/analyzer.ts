@@ -165,6 +165,9 @@ export async function analyzeRepository(
     dependencies,
     codeFiles,
     dependencyGraph,
-    architecture
+    architecture,
+    apiEndpoints,
+    databaseSignals,
+    components
   };
 }
