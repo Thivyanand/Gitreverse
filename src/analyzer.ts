@@ -4,6 +4,7 @@ import type { RepositoryAnalysis } from "./types.js";
 import { analyzeCodeFile } from "./code-intelligence.js";
 import { buildDependencyGraph } from "./dependency-graph.js";
 import { buildArchitectureModel } from "./architecture.js";
+import { analyzeBehaviorFile, detectDatabaseSignals } from "./behavior.js";
 
 const IGNORED = new Set([
   ".git",
@@ -145,6 +146,10 @@ export async function analyzeRepository(
   )).filter((file): file is NonNullable<typeof file> => file !== null);
   const dependencyGraph = buildDependencyGraph(codeFiles);
   const architecture = buildArchitectureModel(dependencyGraph);
+  const behavior = await Promise.all(files.map((file) => analyzeBehaviorFile(root, file, framework)));
+  const apiEndpoints = behavior.flatMap((item) => item.endpoints);
+  const components = behavior.flatMap((item) => item.components);
+  const databaseSignals = detectDatabaseSignals(files, dependencies);
 
   return {
     repository,
