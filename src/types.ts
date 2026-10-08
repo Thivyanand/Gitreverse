@@ -27,7 +27,47 @@ export interface CodeFileAnalysis {
   exports: string[];
 }
 
-export interface DependencyEdge {\n  from: string;\n  to: string;\n  source: string;\n  resolved: boolean;\n}\n\nexport interface DependencyGraph {\n  nodes: string[];\n  edges: DependencyEdge[];\n}\n\nexport interface ArchitectureModel {\n  entryPoints: string[];\n  mostImported: Array<{ file: string; incomingEdges: number }>;\n  isolatedFiles: string[];\n  connectedComponents: string[][];\n}\n\nexport interface RepositoryAnalysis {
+export interface DependencyEdge {
+  from: string;
+  to: string;
+  source: string;
+  resolved: boolean;
+}
+
+export interface DependencyGraph {
+  nodes: string[];
+  edges: DependencyEdge[];
+}
+
+export interface ArchitectureModel {
+  entryPoints: string[];
+  mostImported: Array<{ file: string; incomingEdges: number }>;
+  isolatedFiles: string[];
+  connectedComponents: string[][];
+}
+
+export interface ApiEndpoint {
+  method: string;
+  path: string;
+  file: string;
+  line: number;
+  framework: string;
+}
+
+export interface DatabaseSignal {
+  technology: string;
+  evidence: string[];
+}
+
+export interface ComponentInfo {
+  name: string;
+  file: string;
+  framework: string;
+  props: string[];
+  line: number;
+}
+
+export interface RepositoryAnalysis {
   repository: RepositoryInput;
   analyzedAt: string;
   root: string;
@@ -38,5 +78,10 @@ export interface DependencyEdge {\n  from: string;\n  to: string;\n  source: str
   framework: string | null;
   packageManager: string | null;
   dependencies: string[];
-  codeFiles: CodeFileAnalysis[];\n  dependencyGraph: DependencyGraph;\n  architecture: ArchitectureModel;
+  codeFiles: CodeFileAnalysis[];
+  dependencyGraph: DependencyGraph;
+  architecture: ArchitectureModel;
+  apiEndpoints: ApiEndpoint[];
+  databaseSignals: DatabaseSignal[];
+  components: ComponentInfo[];
 }
