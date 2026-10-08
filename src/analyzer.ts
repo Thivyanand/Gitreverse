@@ -80,6 +80,7 @@ function detectFramework(files: string[], dependencies: string[]): string | null
   if (deps.has("express")) return "Express";
   if (deps.has("fastify")) return "Fastify";
   if (deps.has("flask")) return "Flask";
+  if (deps.has("fastapi")) return "FastAPI";
   if (deps.has("django")) return "Django";
 
   return null;
