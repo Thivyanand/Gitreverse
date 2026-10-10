@@ -61,10 +61,13 @@ export function printAnalysis(analysis: RepositoryAnalysis): void {
   console.log(`UI components:   ${analysis.components.length}`);
   console.log("");
   console.log("Generated reports:");
-  console.log("  architecture.md");
-  console.log("  api-spec.md");
-  console.log("  database-schema.md");
-  console.log("  project-spec.md");
-  console.log("  reconstruction-prompt.md");
+  for (const file of [
+    "repository.json",
+    "architecture.md",
+    "api-spec.md",
+    "database-schema.md",
+    "project-spec.md",
+    "reconstruction-prompt.md"
+  ]) console.log(`  ${file}`);
   console.log("");
 }
