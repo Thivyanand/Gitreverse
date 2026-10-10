@@ -12,10 +12,12 @@ GitReverse statically analyzes a public GitHub repository and generates structur
 - Build a relative-import dependency graph and architecture indicators
 - Detect likely API routes, database technology signals, and React/Next.js UI components
 - Generate five Markdown reports and a JSON analysis file
+- Provide CLI help, configurable output paths, and optional workspace retention
+- Run a TypeScript build check in GitHub Actions on pushes and pull requests
 
 ## Generated reports
 
-By default, output is written to `.gitreverse/`.
+By default, output is written to `.gitreverse/`. The temporary clone is placed under the output directory during analysis and removed afterward unless `--keep-workspace` is supplied.
 
 | File | Contents |
 |---|---|
@@ -43,6 +45,18 @@ Or use shorthand:
 
 ```bash
 npm run dev -- owner/repository
+```
+
+Show CLI help:
+
+```bash
+npm run dev -- --help
+```
+
+Keep the cloned source available for inspection:
+
+```bash
+npm run dev -- owner/repository --keep-workspace
 ```
 
 Choose a different output directory:
