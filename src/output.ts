@@ -1,21 +1,34 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { RepositoryAnalysis } from "./types.js";
+import {
+  generateApiMarkdown,
+  generateArchitectureMarkdown,
+  generateDatabaseMarkdown,
+  generateProjectSpecMarkdown,
+  generateReconstructionPrompt
+} from "./specification.js";
 
 export async function writeAnalysis(
   analysis: RepositoryAnalysis,
   outputRoot: string
 ): Promise<string> {
   await mkdir(outputRoot, { recursive: true });
+  const { root: _root, ...serializable } = analysis;
   const outputFile = path.join(outputRoot, "repository.json");
 
-  const { root: _root, ...serializable } = analysis;
+  await writeFile(outputFile, JSON.stringify(serializable, null, 2) + "\n", "utf8");
+  const reports: Array<[string, string]> = [
+    ["architecture.md", generateArchitectureMarkdown(analysis)],
+    ["api-spec.md", generateApiMarkdown(analysis)],
+    ["database-schema.md", generateDatabaseMarkdown(analysis)],
+    ["project-spec.md", generateProjectSpecMarkdown(analysis)],
+    ["reconstruction-prompt.md", generateReconstructionPrompt(analysis)]
+  ];
 
-  await writeFile(
-    outputFile,
-    JSON.stringify(serializable, null, 2) + "\n",
-    "utf8"
-  );
+  for (const [fileName, content] of reports) {
+    await writeFile(path.join(outputRoot, fileName), content, "utf8");
+  }
 
   return outputFile;
 }
@@ -38,6 +51,20 @@ export function printAnalysis(analysis: RepositoryAnalysis): void {
   console.log(`Code files:      ${analysis.codeFiles.length}`);
   console.log(`Symbols:         ${analysis.codeFiles.reduce((total, file) => total + file.symbols.length, 0)}`);
   console.log(`Imports:         ${analysis.codeFiles.reduce((total, file) => total + file.imports.length, 0)}`);
-  console.log(`Exports:         ${analysis.codeFiles.reduce((total, file) => total + file.exports.length, 0)}`);\n  console.log(`Graph nodes:     ${analysis.dependencyGraph.nodes.length}`);\n  console.log(`Graph edges:     ${analysis.dependencyGraph.edges.length}`);\n  console.log(`Entry points:    ${analysis.architecture.entryPoints.length}`);\n  console.log(`Components:      ${analysis.architecture.connectedComponents.length}`);\n  console.log(`API endpoints:   ${analysis.apiEndpoints.length}`);\n  console.log(`DB signals:      ${analysis.databaseSignals.length}`);\n  console.log(`UI components:   ${analysis.components.length}`);
+  console.log(`Exports:         ${analysis.codeFiles.reduce((total, file) => total + file.exports.length, 0)}`);
+  console.log(`Graph nodes:     ${analysis.dependencyGraph.nodes.length}`);
+  console.log(`Graph edges:     ${analysis.dependencyGraph.edges.length}`);
+  console.log(`Entry points:    ${analysis.architecture.entryPoints.length}`);
+  console.log(`Architecture components: ${analysis.architecture.connectedComponents.length}`);
+  console.log(`API endpoints:   ${analysis.apiEndpoints.length}`);
+  console.log(`DB signals:      ${analysis.databaseSignals.length}`);
+  console.log(`UI components:   ${analysis.components.length}`);
+  console.log("");
+  console.log("Generated reports:");
+  console.log("  architecture.md");
+  console.log("  api-spec.md");
+  console.log("  database-schema.md");
+  console.log("  project-spec.md");
+  console.log("  reconstruction-prompt.md");
   console.log("");
 }
