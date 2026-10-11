@@ -13,7 +13,7 @@ GitReverse statically analyzes a public GitHub repository and generates structur
 - Detect likely API routes, database technology signals, and React/Next.js UI components
 - Generate five Markdown reports and a JSON analysis file
 - Provide CLI help, configurable output paths, and optional workspace retention
-- Run a TypeScript build check in GitHub Actions on pushes and pull requests
+- Run automated tests and a TypeScript build check in GitHub Actions on pushes and pull requests
 
 ## Generated reports
 
@@ -65,7 +65,13 @@ Choose a different output directory:
 npm run dev -- owner/repository --output ./analysis-output
 ```
 
-Build and run the compiled CLI:
+Run the automated test suite (it also builds TypeScript first):
+
+```bash
+npm test
+```
+
+Run the build separately and launch the compiled CLI:
 
 ```bash
 npm run build
