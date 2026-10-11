@@ -1,6 +1,6 @@
 {
   "name": "gitreverse",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Reverse-engineer GitHub repositories into AI-ready project specifications.",
   "type": "module",
   "bin": {
@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc",
-    "start": "node dist/cli.js"
+    "start": "node dist/cli.js",
+    "test": "npm run build && node --test tests/*.test.mjs"
   },
   "engines": {
     "node": ">=20"
