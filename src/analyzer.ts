@@ -70,8 +70,116 @@ async function walk(
   }
 }
 
+function normalizeDependencyName(name: string): string {
+  return name.toLowerCase().replace(/[_.]+/g, "-");
+}
+
+function parsePythonRequirement(line: string): string | null {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#") || /^-(?:r|c|e|f|i|index-url|extra-index-url)\b/i.test(trimmed)) {
+    const egg = trimmed.match(/#egg=([A-Za-z0-9_.-]+)/i);
+    return egg ? normalizeDependencyName(egg[1]) : null;
+  }
+
+  const egg = trimmed.match(/#egg=([A-Za-z0-9_.-]+)/i);
+  if (egg) return normalizeDependencyName(egg[1]);
+
+  const match = trimmed.match(/^([A-Za-z0-9][A-Za-z0-9_.-]*)(?:\[[^\]]+\])?(?=\s*(?:[<>=!~;\s]|$))/);
+  return match ? normalizeDependencyName(match[1]) : null;
+}
+
+async function readPythonDependencies(root: string, files: string[]): Promise<string[]> {
+  const dependencies = new Set<string>();
+  const requirementFiles = files.filter((file) =>
+    !file.includes("/") && /^requirements(?:[-_.][A-Za-z0-9_.-]+)?\.txt$/i.test(file)
+  );
+
+  for (const file of requirementFiles) {
+    const source = await readFile(path.join(root, file), "utf8");
+    for (const line of source.split(/\r?\n/)) {
+      const dependency = parsePythonRequirement(line);
+      if (dependency) dependencies.add(dependency);
+    }
+  }
+
+  if (files.includes("pyproject.toml")) {
+    const source = await readFile(path.join(root, "pyproject.toml"), "utf8");
+    let section = "";
+    let inProjectDependencyArray = false;
+
+    for (const line of source.split(/\r?\n/)) {
+      const sectionMatch = line.match(/^\s*\[([^\]]+)\]\s*$/);
+      if (sectionMatch) {
+        section = sectionMatch[1].toLowerCase();
+        inProjectDependencyArray = false;
+        continue;
+      }
+
+      if (section === "tool.poetry.dependencies" || section === "tool.poetry.dev-dependencies") {
+        const keyMatch = line.match(/^\s*([A-Za-z0-9_.-]+)\s*=/);
+        if (keyMatch && keyMatch[1].toLowerCase() !== "python") {
+          dependencies.add(normalizeDependencyName(keyMatch[1]));
+        }
+      }
+
+      const inProjectSection = section === "project" || section.startsWith("project.optional-dependencies");
+      if (inProjectSection && /(?:dependencies|[A-Za-z0-9_.-]+)\s*=\s*\[/.test(line)) {
+        inProjectDependencyArray = true;
+      }
+
+      if (inProjectSection && inProjectDependencyArray) {
+        for (const match of line.matchAll(/["']([^"']+)["']/g)) {
+          const dependency = parsePythonRequirement(match[1]);
+          if (dependency) dependencies.add(dependency);
+        }
+        if (line.includes("]")) inProjectDependencyArray = false;
+      }
+    }
+  }
+
+  if (files.includes("Pipfile")) {
+    const source = await readFile(path.join(root, "Pipfile"), "utf8");
+    let inPackages = false;
+    for (const line of source.split(/\r?\n/)) {
+      const section = line.match(/^\s*\[([^\]]+)\]\s*$/);
+      if (section) {
+        inPackages = ["packages", "dev-packages"].includes(section[1].toLowerCase());
+        continue;
+      }
+      if (inPackages) {
+        const key = line.match(/^\s*([A-Za-z0-9_.-]+)\s*=/);
+        if (key) dependencies.add(normalizeDependencyName(key[1]));
+      }
+    }
+  }
+
+  return [...dependencies].sort();
+}
+
+async function detectPythonPackageManager(root: string, files: string[]): Promise<string | null> {
+  if (files.includes("uv.lock")) return "uv";
+  if (files.includes("Pipfile")) return "pipenv";
+  if (files.includes("pyproject.toml")) {
+    const source = await readFile(path.join(root, "pyproject.toml"), "utf8");
+    if (/^\s*\[tool\.poetry\]/m.test(source)) return "poetry";
+    if (/^\s*\[project\]/m.test(source)) return "pip";
+  }
+  if (files.some((file) => !file.includes("/") && /^requirements(?:[-_.][A-Za-z0-9_.-]+)?\.txt$/i.test(file))) {
+    return "pip";
+  }
+  return null;
+}
+
 function detectFramework(files: string[], dependencies: string[]): string | null {
-  const deps = new Set(dependencies);
+  const deps = new Set(dependencies.map(normalizeDependencyName));
+  const hasPythonFiles = files.some((file) => path.extname(file).toLowerCase() === ".py");
+
+  // Prefer a Python backend framework when the repository actually contains Python source.
+  if (hasPythonFiles || ["fastapi", "flask", "django"].some((dependency) => deps.has(dependency))) {
+    if (deps.has("fastapi")) return "FastAPI";
+    if (deps.has("flask")) return "Flask";
+    if (deps.has("django")) return "Django";
+  }
 
   if (deps.has("next") || files.some((f) => f === "next.config.js" || f === "next.config.ts")) return "Next.js";
   if (deps.has("react") || deps.has("react-dom")) return "React";
@@ -79,9 +187,6 @@ function detectFramework(files: string[], dependencies: string[]): string | null
   if (deps.has("@angular/core")) return "Angular";
   if (deps.has("express")) return "Express";
   if (deps.has("fastify")) return "Fastify";
-  if (deps.has("flask")) return "Flask";
-  if (deps.has("fastapi")) return "FastAPI";
-  if (deps.has("django")) return "Django";
 
   return null;
 }
@@ -140,7 +245,11 @@ export async function analyzeRepository(
     if (language) languages[language] = (languages[language] ?? 0) + 1;
   }
 
-  const { dependencies, packageManager } = await readJsonDependencies(root);
+  const { dependencies: javascriptDependencies, packageManager: javascriptPackageManager } =
+    await readJsonDependencies(root);
+  const pythonDependencies = await readPythonDependencies(root, files);
+  const dependencies = [...new Set([...javascriptDependencies, ...pythonDependencies])].sort();
+  const packageManager = javascriptPackageManager ?? await detectPythonPackageManager(root, files);
   const framework = detectFramework(files, dependencies);
   const codeFiles = (await Promise.all(
     files.map((file) => analyzeCodeFile(root, file))
