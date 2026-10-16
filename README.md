@@ -7,8 +7,9 @@ GitReverse statically analyzes a public GitHub repository and generates structur
 ## Current capabilities
 
 - Clone a public GitHub repository from a URL or `owner/repository` shorthand
-- Inventory files, directories, languages, dependencies, frameworks, and package manager\n- Detect Python dependencies from `requirements*.txt`, `pyproject.toml`, and `Pipfile`, including FastAPI, Flask, and Django
-- Extract TypeScript/JavaScript symbols, imports, and exports
+- Inventory files, directories, languages, dependencies, frameworks, and package managers
+- Detect Python dependencies from `requirements*.txt`, `pyproject.toml`, and `Pipfile`, including FastAPI, Flask, and Django
+- Extract TypeScript/JavaScript symbols, exports, and static, side-effect, dynamic, CommonJS, and re-export dependencies
 - Build a relative-import dependency graph and architecture indicators
 - Detect likely API routes, database technology signals, and React/Next.js UI components
 - Generate five Markdown reports and a JSON analysis file
@@ -80,7 +81,7 @@ node dist/cli.js owner/repository
 
 ## How to interpret results
 
-The analyzer uses static heuristics, not execution or a full language-specific AST for every supported language. Python dependency detection reads common manifest formats but does not resolve environment markers, optional extras, or transitive dependencies. API routes, framework identification, database signals, and component detection may be incomplete or incorrect. Review source code, tests, migrations, and documentation before treating reports as authoritative.
+The analyzer uses static heuristics, not execution or a full language-specific AST for every supported language. Python dependency detection reads common manifest formats but does not resolve environment markers, optional extras, or transitive dependencies. Import and export extraction is regex-based, so complex syntax and unusual formatting can still be missed. API routes, framework identification, database signals, and component detection may be incomplete or incorrect. Review source code, tests, migrations, and documentation before treating reports as authoritative.
 
 ## Principles
 
