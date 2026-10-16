@@ -20,29 +20,69 @@ function isExported(source: string, index: number): boolean {
   return /^\s*export\b/.test(source.slice(lineStart));
 }
 
+function importedNames(clause: string): string[] {
+  const names: string[] = [];
+  const cleaned = clause.replace(/^\s*type\s+/, "").trim();
+  if (!cleaned) return names;
+
+  // Default imports: import thing from "module"
+  const defaultMatch = cleaned.match(/^([A-Za-z_$][\w$]*)/);
+  if (defaultMatch && defaultMatch[1] !== "type") names.push(defaultMatch[1]);
+
+  // Namespace imports: import * as namespace from "module"
+  const namespaceMatch = cleaned.match(/\*\s+as\s+([A-Za-z_$][\w$]*)/);
+  if (namespaceMatch) names.push(namespaceMatch[1]);
+
+  // Named imports: import { original, original as alias } from "module"
+  const namedMatch = cleaned.match(/\{([^}]*)\}/);
+  if (namedMatch) {
+    for (const entry of namedMatch[1].split(",")) {
+      const item = entry.trim().replace(/^type\s+/, "");
+      if (!item) continue;
+      const original = item.split(/\s+as\s+/)[0].trim();
+      if (original) names.push(original);
+    }
+  }
+
+  return [...new Set(names)];
+}
+
 function extractImports(source: string, file: string): ImportReference[] {
   const imports: ImportReference[] = [];
-  const pattern = /(?:import\s+(.*?)\s+from\s+|import\s*\(\s*|require\s*\(\s*)["']([^"']+)["']/g;
-  let match: RegExpExecArray | null;
+  const seen = new Set<string>();
 
-  while ((match = pattern.exec(source))) {
-    const clause = match[1] ?? "";
-    const moduleSource = match[2];
-    const names = clause
-      .replace(/[{}]/g, "")
-      .split(",")
-      .map((name) => name.trim().split(/\s+as\s+/)[0])
-      .filter(Boolean);
-
+  const addImport = (moduleSource: string, clause = "") => {
+    const key = `${moduleSource}\u0000${clause}`;
+    if (seen.has(key)) return;
+    seen.add(key);
     imports.push({
       source: moduleSource,
       file,
-      names,
+      names: importedNames(clause),
       isRelative: moduleSource.startsWith(".")
     });
+  };
+
+  // Static imports, including side-effect imports without a "from" clause.
+  const staticPattern = /\bimport\s+(?:type\s+)?(?:(.*?)\s+from\s+)?["']([^"']+)["']/g;
+  let match: RegExpExecArray | null;
+  while ((match = staticPattern.exec(source))) {
+    addImport(match[2], match[1] ?? "");
   }
 
-  return imports;
+  // Dynamic imports and CommonJS require calls.
+  const dynamicPattern = /\bimport\s*\(\s*["']([^"']+)["']\s*\)|\brequire\s*\(\s*["']([^"']+)["']\s*\)/g;
+  while ((match = dynamicPattern.exec(source))) {
+    addImport(match[1] ?? match[2]);
+  }
+
+  // Re-exports also establish a module dependency.
+  const reExportPattern = /\bexport\s+(?:type\s+)?(?:\*|\{[^}]*\})\s+from\s+["']([^"']+)["']/g;
+  while ((match = reExportPattern.exec(source))) {
+    addImport(match[1]);
+  }
+
+  return imports.sort((a, b) => a.source.localeCompare(b.source));
 }
 
 function extractExports(source: string): string[] {
