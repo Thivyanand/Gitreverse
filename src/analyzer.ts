@@ -22,6 +22,8 @@ const IGNORED = new Set([
 const LANGUAGE_BY_EXTENSION: Record<string, string> = {
   ".ts": "TypeScript",
   ".tsx": "TypeScript",
+  ".mts": "TypeScript",
+  ".cts": "TypeScript",
   ".js": "JavaScript",
   ".jsx": "JavaScript",
   ".mjs": "JavaScript",
