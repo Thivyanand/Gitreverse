@@ -5,6 +5,8 @@ import type { CodeFileAnalysis, CodeSymbol, ImportReference } from "./types.js";
 const EXTENSIONS: Record<string, string> = {
   ".ts": "TypeScript",
   ".tsx": "TypeScript",
+  ".mts": "TypeScript",
+  ".cts": "TypeScript",
   ".js": "JavaScript",
   ".jsx": "JavaScript",
   ".mjs": "JavaScript",
