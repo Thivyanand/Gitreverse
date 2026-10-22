@@ -76,6 +76,7 @@ export interface RepositoryAnalysis {
   files: string[];
   languages: Record<string, number>;
   framework: string | null;
+  frameworks: string[];
   packageManager: string | null;
   dependencies: string[];
   codeFiles: CodeFileAnalysis[];
