@@ -172,25 +172,27 @@ async function detectPythonPackageManager(root: string, files: string[]): Promis
   return null;
 }
 
-function detectFramework(files: string[], dependencies: string[]): string | null {
+function detectFrameworks(files: string[], dependencies: string[]): string[] {
   const deps = new Set(dependencies.map(normalizeDependencyName));
+  const detected: string[] = [];
   const hasPythonFiles = files.some((file) => path.extname(file).toLowerCase() === ".py");
+  const hasNextConfig = files.some((file) => /^next\.config\.(?:js|mjs|cjs|ts|mts|cts)$/i.test(path.posix.basename(file)));
 
-  // Prefer a Python backend framework when the repository actually contains Python source.
+  // Keep backend and frontend frameworks together for monorepos and full-stack apps.
   if (hasPythonFiles || ["fastapi", "flask", "django"].some((dependency) => deps.has(dependency))) {
-    if (deps.has("fastapi")) return "FastAPI";
-    if (deps.has("flask")) return "Flask";
-    if (deps.has("django")) return "Django";
+    if (deps.has("fastapi")) detected.push("FastAPI");
+    if (deps.has("flask")) detected.push("Flask");
+    if (deps.has("django")) detected.push("Django");
   }
 
-  if (deps.has("next") || files.some((f) => f === "next.config.js" || f === "next.config.ts")) return "Next.js";
-  if (deps.has("react") || deps.has("react-dom")) return "React";
-  if (deps.has("vue")) return "Vue";
-  if (deps.has("@angular/core")) return "Angular";
-  if (deps.has("express")) return "Express";
-  if (deps.has("fastify")) return "Fastify";
+  if (deps.has("next") || hasNextConfig) detected.push("Next.js");
+  else if (deps.has("react") || deps.has("react-dom")) detected.push("React");
+  if (deps.has("vue")) detected.push("Vue");
+  if (deps.has("@angular/core")) detected.push("Angular");
+  if (deps.has("express")) detected.push("Express");
+  if (deps.has("fastify")) detected.push("Fastify");
 
-  return null;
+  return [...new Set(detected)];
 }
 
 async function readJsonDependencies(root: string): Promise<{
@@ -252,15 +254,28 @@ export async function analyzeRepository(
   const pythonDependencies = await readPythonDependencies(root, files);
   const dependencies = [...new Set([...javascriptDependencies, ...pythonDependencies])].sort();
   const packageManager = javascriptPackageManager ?? await detectPythonPackageManager(root, files);
-  const framework = detectFramework(files, dependencies);
+  const frameworks = detectFrameworks(files, dependencies);
+  const framework = frameworks[0] ?? null;
   const codeFiles = (await Promise.all(
     files.map((file) => analyzeCodeFile(root, file))
   )).filter((file): file is NonNullable<typeof file> => file !== null);
   const dependencyGraph = buildDependencyGraph(codeFiles);
   const architecture = buildArchitectureModel(dependencyGraph);
-  const behavior = await Promise.all(files.map((file) => analyzeBehaviorFile(root, file, framework)));
-  const apiEndpoints = behavior.flatMap((item) => item.endpoints);
-  const components = behavior.flatMap((item) => item.components);
+  const behavior = await Promise.all(files.flatMap((file) =>
+    frameworks.map((detectedFramework) => analyzeBehaviorFile(root, file, detectedFramework))
+  ));
+  const apiEndpoints = [...new Map(
+    behavior.flatMap((item) => item.endpoints).map((endpoint) => [
+      [endpoint.method, endpoint.path, endpoint.file, endpoint.line, endpoint.framework].join("\u0000"),
+      endpoint
+    ])
+  ).values()];
+  const components = [...new Map(
+    behavior.flatMap((item) => item.components).map((component) => [
+      [component.name, component.file, component.line].join("\u0000"),
+      component
+    ])
+  ).values()];
   const databaseSignals = detectDatabaseSignals(files, dependencies);
 
   return {
@@ -272,6 +287,7 @@ export async function analyzeRepository(
     files: files.sort(),
     languages,
     framework,
+    frameworks,
     packageManager,
     dependencies,
     codeFiles,
