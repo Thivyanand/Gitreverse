@@ -7,8 +7,8 @@ GitReverse statically analyzes a public GitHub repository and generates structur
 ## Current capabilities
 
 - Clone a public GitHub repository from a URL or `owner/repository` shorthand
-- Inventory files, directories, languages, dependencies, frameworks, and package managers
-- Detect Python dependencies from `requirements*.txt`, `pyproject.toml`, and `Pipfile`, including FastAPI, Flask, and Django
+- Inventory files, directories, languages, dependencies, multiple detected frameworks, and package managers
+- Detect Python dependencies from `requirements*.txt`, `pyproject.toml`, and `Pipfile`, including FastAPI, Flask, and Django; retain backend and frontend framework detections together for full-stack repositories
 - Extract TypeScript/JavaScript symbols, exports, and static, side-effect, dynamic, CommonJS, and re-export dependencies, including `.mts`/`.cts` modules
 - Build a relative-import dependency graph with TypeScript `.js` → `.ts` and NodeNext `.mjs`/`.cjs` → `.mts`/`.cts` resolution, plus architecture indicators
 - Detect likely API routes, database technology signals, and React/Next.js UI components
