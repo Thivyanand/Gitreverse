@@ -68,3 +68,13 @@ test("detects frameworks from configuration files when manifests are missing", a
     assert.deepEqual(analysis.frameworks, ["Django", "Angular", "Svelte", "Astro"]);
   });
 });
+
+test("detects Django from separate settings and URL configuration files", async () => {
+  await withProject({
+    "project/settings.py": "SECRET_KEY = 'test'\\n",
+    "project/urls.py": "urlpatterns = []\\n"
+  }, async (root) => {
+    const analysis = await analyzeRepository(root, repository);
+    assert.deepEqual(analysis.frameworks, ["Django"]);
+  });
+});
