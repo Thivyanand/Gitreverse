@@ -175,20 +175,28 @@ async function detectPythonPackageManager(root: string, files: string[]): Promis
 function detectFrameworks(files: string[], dependencies: string[]): string[] {
   const deps = new Set(dependencies.map(normalizeDependencyName));
   const detected: string[] = [];
-  const hasPythonFiles = files.some((file) => path.extname(file).toLowerCase() === ".py");
-  const hasNextConfig = files.some((file) => /^next\.config\.(?:js|mjs|cjs|ts|mts|cts)$/i.test(path.posix.basename(file)));
+  const basenames = new Set(files.map((file) => path.posix.basename(file).toLowerCase()));
+  const hasConfig = (pattern: RegExp) => files.some((file) => pattern.test(path.posix.basename(file)));
+  const hasNextConfig = hasConfig(/^next\.config\.(?:js|mjs|cjs|ts|mts|cts)$/i);
+  const hasDjangoLayout = basenames.has("manage.py") ||
+    files.some((file) => /(^|\/)settings\.py$/i.test(file) && /(^|\/)urls\.py$/i.test(file));
+  const hasAngularConfig = files.some((file) => path.posix.basename(file).toLowerCase() === "angular.json");
+  const hasVueConfig = hasConfig(/^vue\.config\.(?:js|cjs|mjs|ts)$/i);
+  const hasSvelteConfig = hasConfig(/^svelte\.config\.(?:js|cjs|mjs|ts)$/i);
+  const hasAstroConfig = hasConfig(/^astro\.config\.(?:js|mjs|ts|cjs)$/i);
 
   // Keep backend and frontend frameworks together for monorepos and full-stack apps.
-  if (hasPythonFiles || ["fastapi", "flask", "django"].some((dependency) => deps.has(dependency))) {
-    if (deps.has("fastapi")) detected.push("FastAPI");
-    if (deps.has("flask")) detected.push("Flask");
-    if (deps.has("django")) detected.push("Django");
-  }
+  if (deps.has("fastapi")) detected.push("FastAPI");
+  if (deps.has("flask")) detected.push("Flask");
+  if (deps.has("django") || hasDjangoLayout) detected.push("Django");
 
   if (deps.has("next") || hasNextConfig) detected.push("Next.js");
   else if (deps.has("react") || deps.has("react-dom")) detected.push("React");
-  if (deps.has("vue")) detected.push("Vue");
-  if (deps.has("@angular/core")) detected.push("Angular");
+  if (deps.has("vue") || hasVueConfig) detected.push("Vue");
+  if (deps.has("@angular/core") || hasAngularConfig) detected.push("Angular");
+  if (deps.has("svelte") || hasSvelteConfig) detected.push("Svelte");
+  if (deps.has("astro") || hasAstroConfig) detected.push("Astro");
+  if (deps.has("@nestjs/core")) detected.push("NestJS");
   if (deps.has("express")) detected.push("Express");
   if (deps.has("fastify")) detected.push("Fastify");
 
