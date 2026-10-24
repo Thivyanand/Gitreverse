@@ -178,8 +178,9 @@ function detectFrameworks(files: string[], dependencies: string[]): string[] {
   const basenames = new Set(files.map((file) => path.posix.basename(file).toLowerCase()));
   const hasConfig = (pattern: RegExp) => files.some((file) => pattern.test(path.posix.basename(file)));
   const hasNextConfig = hasConfig(/^next\.config\.(?:js|mjs|cjs|ts|mts|cts)$/i);
-  const hasDjangoLayout = basenames.has("manage.py") ||
-    files.some((file) => /(^|\/)settings\.py$/i.test(file) && /(^|\/)urls\.py$/i.test(file));
+  const hasDjangoSettings = files.some((file) => /(^|\/)settings\.py$/i.test(file));
+  const hasDjangoUrls = files.some((file) => /(^|\/)urls\.py$/i.test(file));
+  const hasDjangoLayout = basenames.has("manage.py") || (hasDjangoSettings && hasDjangoUrls);
   const hasAngularConfig = files.some((file) => path.posix.basename(file).toLowerCase() === "angular.json");
   const hasVueConfig = hasConfig(/^vue\.config\.(?:js|cjs|mjs|ts)$/i);
   const hasSvelteConfig = hasConfig(/^svelte\.config\.(?:js|cjs|mjs|ts)$/i);
