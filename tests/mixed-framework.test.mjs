@@ -56,3 +56,15 @@ test("returns an empty framework list when no supported framework is detected", 
     assert.equal(analysis.framework, null);
   });
 });
+
+test("detects frameworks from configuration files when manifests are missing", async () => {
+  await withProject({
+    "manage.py": "import os\\n",
+    "web/angular.json": "{ }\\n",
+    "frontend/svelte.config.js": "export default {};\\n",
+    "site/astro.config.mjs": "export default {};\\n"
+  }, async (root) => {
+    const analysis = await analyzeRepository(root, repository);
+    assert.deepEqual(analysis.frameworks, ["Django", "Angular", "Svelte", "Astro"]);
+  });
+});
