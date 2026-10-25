@@ -46,6 +46,16 @@ test("retains both Python backend and JavaScript frontend frameworks", async () 
   });
 });
 
+test("detects frameworks from source imports when manifests are missing", async () => {
+  await withProject({
+    "backend/app.py": "from fastapi import FastAPI\napp = FastAPI()\n",
+    "server/index.js": "const express = require('express');\nconst app = express();\n"
+  }, async (root) => {
+    const analysis = await analyzeRepository(root, repository);
+    assert.deepEqual(analysis.frameworks, ["FastAPI", "Express"]);
+  });
+});
+
 test("returns an empty framework list when no supported framework is detected", async () => {
   await withProject({
     "README.md": "A plain repository",
