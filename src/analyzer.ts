@@ -172,7 +172,7 @@ async function detectPythonPackageManager(root: string, files: string[]): Promis
   return null;
 }
 
-function detectFrameworks(files: string[], dependencies: string[]): string[] {
+async function detectFrameworks(root: string, files: string[], dependencies: string[]): Promise<string[]> {
   const deps = new Set(dependencies.map(normalizeDependencyName));
   const detected: string[] = [];
   const basenames = new Set(files.map((file) => path.posix.basename(file).toLowerCase()));
@@ -185,20 +185,42 @@ function detectFrameworks(files: string[], dependencies: string[]): string[] {
   const hasVueConfig = hasConfig(/^vue\.config\.(?:js|cjs|mjs|ts)$/i);
   const hasSvelteConfig = hasConfig(/^svelte\.config\.(?:js|cjs|mjs|ts)$/i);
   const hasAstroConfig = hasConfig(/^astro\.config\.(?:js|mjs|ts|cjs)$/i);
+  
+  // Source signatures provide a fallback when a repository omits dependency manifests.
+  const sourceFiles = files.filter((file) => /\.(?:py|[cm]?js|jsx|[cm]?ts|tsx|vue|svelte)$/i.test(file));
+  const sourceSignals = new Set<string>();
+  for (const file of sourceFiles) {
+    try {
+      const source = await readFile(path.join(root, file), "utf8");
+      if (source.length > 200_000) continue;
+      if (/\bfrom\s+["']fastapi["']|\bimport\s+fastapi\b/i.test(source)) sourceSignals.add("FastAPI");
+      if (/\bfrom\s+["']flask["']|\bimport\s+flask\b/i.test(source)) sourceSignals.add("Flask");
+      if (/\bfrom\s+["']express["']|require\s*\(\s*["']express["']\s*\)/i.test(source)) sourceSignals.add("Express");
+      if (/\bfrom\s+["']@nestjs\/core["']|require\s*\(\s*["']@nestjs\/core["']\s*\)/i.test(source)) sourceSignals.add("NestJS");
+      if (/\bfrom\s+["']vue["']|\bcreateApp\s*\(/i.test(source)) sourceSignals.add("Vue");
+      if (/\bfrom\s+["']svelte["']|<svelte:|\bimport\s+\w+\s+from\s+["']\.\/.*\.svelte["']/i.test(source)) sourceSignals.add("Svelte");
+      if (/\bfrom\s+["'](?:next|next\/[a-z-]+)["']|\bNextResponse\b/i.test(source)) sourceSignals.add("Next.js");
+      if (/\bfrom\s+["'](?:react|react-dom)["']|\bReact\.createElement\b/i.test(source)) sourceSignals.add("React");
+      if (/\bfrom\s+["']@angular\/core["']|\b@Component\s*\(/i.test(source)) sourceSignals.add("Angular");
+      if (/\bfrom\s+["']astro["']|\bAstro\.props\b/i.test(source)) sourceSignals.add("Astro");
+    } catch {
+      // A file that cannot be read should not prevent repository analysis.
+    }
+  }
 
   // Keep backend and frontend frameworks together for monorepos and full-stack apps.
-  if (deps.has("fastapi")) detected.push("FastAPI");
-  if (deps.has("flask")) detected.push("Flask");
+  if (deps.has("fastapi") || sourceSignals.has("FastAPI")) detected.push("FastAPI");
+  if (deps.has("flask") || sourceSignals.has("Flask")) detected.push("Flask");
   if (deps.has("django") || hasDjangoLayout) detected.push("Django");
 
-  if (deps.has("next") || hasNextConfig) detected.push("Next.js");
-  else if (deps.has("react") || deps.has("react-dom")) detected.push("React");
-  if (deps.has("vue") || hasVueConfig) detected.push("Vue");
-  if (deps.has("@angular/core") || hasAngularConfig) detected.push("Angular");
-  if (deps.has("svelte") || hasSvelteConfig) detected.push("Svelte");
-  if (deps.has("astro") || hasAstroConfig) detected.push("Astro");
-  if (deps.has("@nestjs/core")) detected.push("NestJS");
-  if (deps.has("express")) detected.push("Express");
+  if (deps.has("next") || hasNextConfig || sourceSignals.has("Next.js")) detected.push("Next.js");
+  else if (deps.has("react") || deps.has("react-dom") || sourceSignals.has("React")) detected.push("React");
+  if (deps.has("vue") || hasVueConfig || sourceSignals.has("Vue")) detected.push("Vue");
+  if (deps.has("@angular/core") || hasAngularConfig || sourceSignals.has("Angular")) detected.push("Angular");
+  if (deps.has("svelte") || hasSvelteConfig || sourceSignals.has("Svelte")) detected.push("Svelte");
+  if (deps.has("astro") || hasAstroConfig || sourceSignals.has("Astro")) detected.push("Astro");
+  if (deps.has("@nestjs/core") || sourceSignals.has("NestJS")) detected.push("NestJS");
+  if (deps.has("express") || sourceSignals.has("Express")) detected.push("Express");
   if (deps.has("fastify")) detected.push("Fastify");
 
   return [...new Set(detected)];
@@ -263,7 +285,7 @@ export async function analyzeRepository(
   const pythonDependencies = await readPythonDependencies(root, files);
   const dependencies = [...new Set([...javascriptDependencies, ...pythonDependencies])].sort();
   const packageManager = javascriptPackageManager ?? await detectPythonPackageManager(root, files);
-  const frameworks = detectFrameworks(files, dependencies);
+  const frameworks = await detectFrameworks(root, files, dependencies);
   const framework = frameworks[0] ?? null;
   const codeFiles = (await Promise.all(
     files.map((file) => analyzeCodeFile(root, file))
