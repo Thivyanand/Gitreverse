@@ -56,6 +56,16 @@ test("detects frameworks from source imports when manifests are missing", async 
   });
 });
 
+test("detects Django and Fastify from source imports without manifests or config files", async () => {
+  await withProject({
+    "api/urls.py": "from django.urls import path\nurlpatterns = []\n",
+    "server/app.ts": "import Fastify from 'fastify';\nconst app = Fastify();\n"
+  }, async (root) => {
+    const analysis = await analyzeRepository(root, repository);
+    assert.deepEqual(analysis.frameworks, ["Django", "Fastify"]);
+  });
+});
+
 test("returns an empty framework list when no supported framework is detected", async () => {
   await withProject({
     "README.md": "A plain repository",
