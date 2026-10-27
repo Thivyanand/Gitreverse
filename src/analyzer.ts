@@ -195,7 +195,7 @@ async function detectFrameworks(root: string, files: string[], dependencies: str
       if (source.length > 200_000) continue;
       if (/\bfrom\s+["']fastapi["']|\bimport\s+fastapi\b/i.test(source)) sourceSignals.add("FastAPI");
       if (/\bfrom\s+["']flask["']|\bimport\s+flask\b/i.test(source)) sourceSignals.add("Flask");
-      if (/\bfrom\s+["']django(?:\.[A-Za-z_][\w.]*)?["']|\bimport\s+django\b/i.test(source)) sourceSignals.add("Django");
+      if (/\bfrom\s+django(?:\.[A-Za-z_]\w*)*\s+import\b|\bimport\s+django\b/i.test(source)) sourceSignals.add("Django");
       if (/\bfrom\s+["']express["']|require\s*\(\s*["']express["']\s*\)/i.test(source)) sourceSignals.add("Express");
       if (/\bfrom\s+["']fastify["']|require\s*\(\s*["']fastify["']\s*\)/i.test(source)) sourceSignals.add("Fastify");
       if (/\bfrom\s+["']@nestjs\/core["']|require\s*\(\s*["']@nestjs\/core["']\s*\)/i.test(source)) sourceSignals.add("NestJS");
