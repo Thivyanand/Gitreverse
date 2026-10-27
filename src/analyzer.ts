@@ -195,7 +195,9 @@ async function detectFrameworks(root: string, files: string[], dependencies: str
       if (source.length > 200_000) continue;
       if (/\bfrom\s+["']fastapi["']|\bimport\s+fastapi\b/i.test(source)) sourceSignals.add("FastAPI");
       if (/\bfrom\s+["']flask["']|\bimport\s+flask\b/i.test(source)) sourceSignals.add("Flask");
+      if (/\bfrom\s+["']django(?:\.[A-Za-z_][\w.]*)?["']|\bimport\s+django\b/i.test(source)) sourceSignals.add("Django");
       if (/\bfrom\s+["']express["']|require\s*\(\s*["']express["']\s*\)/i.test(source)) sourceSignals.add("Express");
+      if (/\bfrom\s+["']fastify["']|require\s*\(\s*["']fastify["']\s*\)/i.test(source)) sourceSignals.add("Fastify");
       if (/\bfrom\s+["']@nestjs\/core["']|require\s*\(\s*["']@nestjs\/core["']\s*\)/i.test(source)) sourceSignals.add("NestJS");
       if (/\bfrom\s+["']vue["']|\bcreateApp\s*\(/i.test(source)) sourceSignals.add("Vue");
       if (/\bfrom\s+["']svelte["']|<svelte:|\bimport\s+\w+\s+from\s+["']\.\/.*\.svelte["']/i.test(source)) sourceSignals.add("Svelte");
@@ -211,7 +213,7 @@ async function detectFrameworks(root: string, files: string[], dependencies: str
   // Keep backend and frontend frameworks together for monorepos and full-stack apps.
   if (deps.has("fastapi") || sourceSignals.has("FastAPI")) detected.push("FastAPI");
   if (deps.has("flask") || sourceSignals.has("Flask")) detected.push("Flask");
-  if (deps.has("django") || hasDjangoLayout) detected.push("Django");
+  if (deps.has("django") || hasDjangoLayout || sourceSignals.has("Django")) detected.push("Django");
 
   if (deps.has("next") || hasNextConfig || sourceSignals.has("Next.js")) detected.push("Next.js");
   else if (deps.has("react") || deps.has("react-dom") || sourceSignals.has("React")) detected.push("React");
@@ -221,7 +223,7 @@ async function detectFrameworks(root: string, files: string[], dependencies: str
   if (deps.has("astro") || hasAstroConfig || sourceSignals.has("Astro")) detected.push("Astro");
   if (deps.has("@nestjs/core") || sourceSignals.has("NestJS")) detected.push("NestJS");
   if (deps.has("express") || sourceSignals.has("Express")) detected.push("Express");
-  if (deps.has("fastify")) detected.push("Fastify");
+  if (deps.has("fastify") || sourceSignals.has("Fastify")) detected.push("Fastify");
 
   return [...new Set(detected)];
 }
