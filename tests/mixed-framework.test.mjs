@@ -98,3 +98,22 @@ test("detects Django from separate settings and URL configuration files", async 
     assert.deepEqual(analysis.frameworks, ["Django"]);
   });
 });
+
+test("does not infer Vue or Angular from generic function and decorator names", async () => {
+  await withProject({
+    "src/app.js": "function createApp() { return {}; }\\n",
+    "src/widget.ts": "@Component({ selector: 'widget' })\\nclass Widget {}\\n"
+  }, async (root) => {
+    const analysis = await analyzeRepository(root, repository);
+    assert.deepEqual(analysis.frameworks, []);
+  });
+});
+
+test("skips oversized files during source-signature framework detection", async () => {
+  await withProject({
+    "src/large.ts": " ".repeat(200_001) + "import Fastify from 'fastify';\\n"
+  }, async (root) => {
+    const analysis = await analyzeRepository(root, repository);
+    assert.deepEqual(analysis.frameworks, []);
+  });
+});
