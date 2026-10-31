@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import type { RepositoryAnalysis } from "./types.js";
 import { analyzeCodeFile } from "./code-intelligence.js";
@@ -191,19 +191,21 @@ async function detectFrameworks(root: string, files: string[], dependencies: str
   const sourceSignals = new Set<string>();
   for (const file of sourceFiles) {
     try {
-      const source = await readFile(path.join(root, file), "utf8");
-      if (source.length > 200_000) continue;
+      const filePath = path.join(root, file);
+      const metadata = await stat(filePath);
+      if (metadata.size > 200_000) continue;
+      const source = await readFile(filePath, "utf8");
       if (/\bfrom\s+["']fastapi["']|\bimport\s+fastapi\b/i.test(source)) sourceSignals.add("FastAPI");
       if (/\bfrom\s+["']flask["']|\bimport\s+flask\b/i.test(source)) sourceSignals.add("Flask");
       if (/\bfrom\s+django(?:\.[A-Za-z_]\w*)*\s+import\b|\bimport\s+django\b/i.test(source)) sourceSignals.add("Django");
       if (/\bfrom\s+["']express["']|require\s*\(\s*["']express["']\s*\)/i.test(source)) sourceSignals.add("Express");
       if (/\bfrom\s+["']fastify["']|require\s*\(\s*["']fastify["']\s*\)/i.test(source)) sourceSignals.add("Fastify");
       if (/\bfrom\s+["']@nestjs\/core["']|require\s*\(\s*["']@nestjs\/core["']\s*\)/i.test(source)) sourceSignals.add("NestJS");
-      if (/\bfrom\s+["']vue["']|\bcreateApp\s*\(/i.test(source)) sourceSignals.add("Vue");
+      if (/\bfrom\s+["']vue["']/i.test(source)) sourceSignals.add("Vue");
       if (/\bfrom\s+["']svelte["']|<svelte:|\bimport\s+\w+\s+from\s+["']\.\/.*\.svelte["']/i.test(source)) sourceSignals.add("Svelte");
       if (/\bfrom\s+["'](?:next|next\/[a-z-]+)["']|\bNextResponse\b/i.test(source)) sourceSignals.add("Next.js");
       if (/\bfrom\s+["'](?:react|react-dom)["']|\bReact\.createElement\b/i.test(source)) sourceSignals.add("React");
-      if (/\bfrom\s+["']@angular\/core["']|\b@Component\s*\(/i.test(source)) sourceSignals.add("Angular");
+      if (/\bfrom\s+["']@angular\/core["']/i.test(source)) sourceSignals.add("Angular");
       if (/\bfrom\s+["']astro["']|\bAstro\.props\b/i.test(source)) sourceSignals.add("Astro");
     } catch {
       // A file that cannot be read should not prevent repository analysis.
