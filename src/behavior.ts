@@ -56,6 +56,12 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
     }
   }
 
+  if (framework === "Django") {
+    const pattern = /\b(?:path|re_path)\s*\(\s*(?:r|f)?["']([^"']+)["']/g;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source))) add("ROUTE", match[1], match.index);
+  }
+
   return endpoints;
 }
 
