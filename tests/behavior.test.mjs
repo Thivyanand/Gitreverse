@@ -36,3 +36,25 @@ test("detects database technologies from dependencies and paths", () => {
   assert.ok(technologies.includes("Redis"));
   assert.ok(technologies.includes("Database layer"));
 });
+
+test("detects Django path and re_path URL patterns with source locations", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "gitreverse-django-"));
+  try {
+    await mkdir(path.join(root, "project"), { recursive: true });
+    await writeFile(
+      path.join(root, "project", "urls.py"),
+      'from django.urls import path, re_path\\nurlpatterns = [\\n    path("api/health/", health),\\n    re_path(r"^api/users/(?P<id>\\\\d+)/$", detail),\\n]\\n',
+      "utf8"
+    );
+
+    const result = await analyzeBehaviorFile(root, "project/urls.py", "Django");
+    assert.deepEqual(result.endpoints.map(({ method, path, line, framework }) => ({
+      method, path, line, framework
+    })), [
+      { method: "ROUTE", path: "api/health/", line: 3, framework: "Django" },
+      { method: "ROUTE", path: "^api/users/(?P<id>\\\\d+)/$", line: 4, framework: "Django" }
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
