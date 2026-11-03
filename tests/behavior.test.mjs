@@ -84,3 +84,32 @@ test("extracts all configured Flask and FastAPI HTTP methods", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("detects routes registered on Flask blueprints and named FastAPI routers", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "gitreverse-python-routers-"));
+  try {
+    await mkdir(path.join(root, "api"), { recursive: true });
+    await writeFile(
+      path.join(root, "api", "routers.py"),
+      '@users.route("/users")\\n' +
+      '@admin.post("/admin")\\n' +
+      '@inventory.api_route("/stock", methods=["GET", "PATCH"])\\n',
+      "utf8"
+    );
+
+    const flask = await analyzeBehaviorFile(root, "api/routers.py", "Flask");
+    const fastapi = await analyzeBehaviorFile(root, "api/routers.py", "FastAPI");
+    assert.deepEqual(flask.endpoints.map(({ method, path }) => ({ method, path })), [
+      { method: "ROUTE", path: "/users" },
+      { method: "POST", path: "/admin" }
+    ]);
+    assert.deepEqual(fastapi.endpoints.map(({ method, path }) => ({ method, path })), [
+      { method: "ROUTE", path: "/users" },
+      { method: "POST", path: "/admin" },
+      { method: "GET", path: "/stock" },
+      { method: "PATCH", path: "/stock" }
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
