@@ -47,7 +47,9 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
   }
 
   if (framework === "Flask" || framework === "FastAPI") {
-    const pattern = /@(?:[A-Za-z_]\w*)\.(route|api_route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g;
+    const pattern = framework === "Flask"
+      ? /@(?:[A-Za-z_]\w*)\.(route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g
+      : /@(?:[A-Za-z_]\w*)\.(route|api_route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g;
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(source))) {
       const directMethod = match[1].match(/^(get|post|put|patch|delete)$/);
