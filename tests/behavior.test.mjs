@@ -64,14 +64,18 @@ test("extracts all configured Flask and FastAPI HTTP methods", async () => {
   try {
     await mkdir(path.join(root, "api"), { recursive: true });
     await writeFile(
-      path.join(root, "api", "routes.py"),
-      '@app.route("/items", methods=["GET", "POST"])\\n' +
+      path.join(root, "api", "flask_routes.py"),
+      '@app.route("/items", methods=["GET", "POST"])\\n',
+      "utf8"
+    );
+    await writeFile(
+      path.join(root, "api", "fastapi_routes.py"),
       '@router.api_route("/records", methods=["GET", "DELETE"])\\n',
       "utf8"
     );
 
-    const flask = await analyzeBehaviorFile(root, "api/routes.py", "Flask");
-    const fastapi = await analyzeBehaviorFile(root, "api/routes.py", "FastAPI");
+    const flask = await analyzeBehaviorFile(root, "api/flask_routes.py", "Flask");
+    const fastapi = await analyzeBehaviorFile(root, "api/fastapi_routes.py", "FastAPI");
     assert.deepEqual(flask.endpoints.map(({ method, path }) => ({ method, path })), [
       { method: "GET", path: "/items" },
       { method: "POST", path: "/items" }
