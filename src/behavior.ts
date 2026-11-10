@@ -38,13 +38,13 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
   }
 
   if (framework === "NestJS") {
-    const controllerPrefix = source.match(/@Controller\\s*\\(\\s*[\\"']([^\\"']*)[\\"']/)?.[1] ?? "";
-    const pattern = /@(Get|Post|Put|Patch|Delete|Options|Head)\\s*\\(\\s*(?:[\\"']([^\\"']*)[\\"'])?\\s*\\)/g;
+    const controllerPrefix = source.match(/@Controller\s*\(\s*["']([^"']*)["']/)?.[1] ?? "";
+    const pattern = /@(Get|Post|Put|Patch|Delete|Options|Head)\s*\(\s*(?:["']([^"']*)["'])?\s*\)/g;
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(source))) {
       const method = match[1].toUpperCase();
       const suffix = match[2] ?? "";
-      const route = [controllerPrefix, suffix].filter(Boolean).join("/").replace(/\\/{2,}/g, "/");
+      const route = [controllerPrefix, suffix].filter(Boolean).join("/").replace(/\/{2,}/g, "/");
       add(method, route.startsWith("/") ? route : "/" + route, match.index);
     }
   }
@@ -139,7 +139,7 @@ export function detectDatabaseSignals(files: string[], dependencies: string[]): 
   }
 
   if (deps.has("sqlalchemy")) add("SQLAlchemy", ["sqlalchemy dependency detected"]);
-  if (deps.has("django") && files.some((f) => /(^|\\/)models(?:\\.py|\\/)/i.test(f))) {
+  if (deps.has("django") && files.some((f) => /(^|\/)models(?:\.py|\/)/i.test(f))) {
     add("Django ORM", ["Django dependency and model source file detected"]);
   }
   return signals;
