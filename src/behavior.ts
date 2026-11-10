@@ -37,6 +37,18 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
     while ((match = pattern.exec(source))) add(match[1], match[2], match.index);
   }
 
+  if (framework === "NestJS") {
+    const controllerPrefix = source.match(/@Controller\\s*\\(\\s*[\\"']([^\\"']*)[\\"']/)?.[1] ?? "";
+    const pattern = /@(Get|Post|Put|Patch|Delete|Options|Head)\\s*\\(\\s*(?:[\\"']([^\\"']*)[\\"'])?\\s*\\)/g;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source))) {
+      const method = match[1].toUpperCase();
+      const suffix = match[2] ?? "";
+      const route = [controllerPrefix, suffix].filter(Boolean).join("/").replace(/\\/{2,}/g, "/");
+      add(method, route.startsWith("/") ? route : "/" + route, match.index);
+    }
+  }
+
   if (framework === "Next.js" && /app[\\/]api|pages[\\/]api/.test(file)) {
     const route = "/" + file
       .replace(/^.*?(?:app[\\/]api|pages[\\/]api)[\\/]/, "")
