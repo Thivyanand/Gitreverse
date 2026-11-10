@@ -138,5 +138,9 @@ export function detectDatabaseSignals(files: string[], dependencies: string[]): 
     add("Database layer", ["database-related directory detected"]);
   }
 
+  if (deps.has("sqlalchemy")) add("SQLAlchemy", ["sqlalchemy dependency detected"]);
+  if (deps.has("django") && files.some((f) => /(^|\\/)models(?:\\.py|\\/)/i.test(f))) {
+    add("Django ORM", ["Django dependency and model source file detected"]);
+  }
   return signals;
 }
