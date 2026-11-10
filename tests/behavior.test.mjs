@@ -118,3 +118,24 @@ test("detects routes registered on Flask blueprints and named FastAPI routers", 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+
+test("extracts NestJS controller routes and combines controller prefixes", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "gitreverse-nestjs-"));
+  try {
+    await mkdir(path.join(root, "users"), { recursive: true });
+    await writeFile(
+      path.join(root, "users", "users.controller.ts"),
+      '@Controller("users")\\nexport class UsersController {\\n  @Get()\\n  findAll() {}\\n  @Post(":id")\\n  create() {}\\n}\\n',
+      "utf8"
+    );
+
+    const result = await analyzeBehaviorFile(root, "users/users.controller.ts", "NestJS");
+    assert.deepEqual(result.endpoints.map(({ method, path }) => ({ method, path })), [
+      { method: "GET", path: "/users" },
+      { method: "POST", path: "/users/:id" }
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
