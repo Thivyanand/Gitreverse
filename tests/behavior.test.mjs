@@ -27,14 +27,16 @@ test("detects Express routes with method, path, and line number", async () => {
 
 test("detects database technologies from dependencies and paths", () => {
   const signals = detectDatabaseSignals(
-    ["prisma/schema.prisma", "src/models/user.ts"],
-    ["@prisma/client", "pg", "ioredis"]
+    ["prisma/schema.prisma", "src/models/user.ts", "accounts/models.py"],
+    ["@prisma/client", "pg", "ioredis", "sqlalchemy", "django"]
   );
   const technologies = signals.map((signal) => signal.technology);
   assert.ok(technologies.includes("Prisma"));
   assert.ok(technologies.includes("PostgreSQL"));
   assert.ok(technologies.includes("Redis"));
   assert.ok(technologies.includes("Database layer"));
+  assert.ok(technologies.includes("SQLAlchemy"));
+  assert.ok(technologies.includes("Django ORM"));
 });
 
 test("detects Django path and re_path URL patterns with source locations", async () => {
