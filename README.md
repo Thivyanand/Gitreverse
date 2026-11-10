@@ -11,7 +11,7 @@ GitReverse statically analyzes a public GitHub repository and generates structur
 - Detect Python dependencies from `requirements*.txt`, `pyproject.toml`, and `Pipfile`, including FastAPI, Flask, and Django; retain backend and frontend framework detections together for full-stack repositories, with config-file fallbacks for Django, Angular, Vue, Svelte, and Astro, plus source-import signature fallbacks for supported frameworks when manifests are missing
 - Extract TypeScript/JavaScript symbols, exports, and static, side-effect, dynamic, CommonJS, and re-export dependencies, including `.mts`/`.cts` modules
 - Build a relative-import dependency graph with TypeScript `.js` → `.ts` and NodeNext `.mjs`/`.cjs` → `.mts`/`.cts` resolution, plus architecture indicators
-- Detect likely API routes across Express, Fastify, Flask, FastAPI, and Django URL patterns, including configured HTTP methods and named Flask blueprints / FastAPI routers; identify database technology signals and React/Next.js UI components
+- Detect likely API routes across Express, Fastify, Flask, FastAPI, Django URL patterns, and NestJS controller decorators, including configured HTTP methods and named Flask blueprints / FastAPI routers; identify database technology signals and React/Next.js UI components
 - Generate five Markdown reports and a JSON analysis file
 - Provide CLI help, configurable output paths, and optional workspace retention
 - Run automated tests and a TypeScript build check in GitHub Actions on pushes and pull requests
