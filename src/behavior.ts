@@ -62,8 +62,8 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
     const prefixes = new Map<string, string>();
     const quote = String.fromCharCode(34, 39);
     const declarationPattern = framework === "FastAPI"
-      ? /(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*APIRouter\s*\(([^)]*)\)/g
-      : /(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*Blueprint\s*\(([^)]*)\)/g;
+      ? /(?:^|\n)\s*(?:(?:const|let|var)\s+)?([A-Za-z_]\w*)\s*=\s*APIRouter\s*\(([^)]*)\)/g
+      : /(?:^|\n)\s*(?:(?:const|let|var)\s+)?([A-Za-z_]\w*)\s*=\s*Blueprint\s*\(([^)]*)\)/g;
     let declaration: RegExpExecArray | null;
     while ((declaration = declarationPattern.exec(source))) {
       const option = framework === "FastAPI" ? "prefix" : "url_prefix";
