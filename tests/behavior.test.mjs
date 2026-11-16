@@ -141,3 +141,53 @@ test("extracts NestJS controller routes and combines controller prefixes", async
     await rm(root, { recursive: true, force: true });
   }
 });
+
+
+test("composes FastAPI router and include_router prefixes", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "gitreverse-fastapi-prefix-"));
+  try {
+    await mkdir(path.join(root, "api"), { recursive: true });
+    await writeFile(
+      path.join(root, "api", "routes.py"),
+      [
+        'router = APIRouter(prefix="/users")',
+        'app.include_router(router, prefix="/v1")',
+        '@router.get("/active")',
+        'def active(): pass',
+        ''
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = await analyzeBehaviorFile(root, "api/routes.py", "FastAPI");
+    assert.deepEqual(result.endpoints.map(({ method, path }) => ({ method, path })), [
+      { method: "GET", path: "/v1/users/active" }
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("composes Flask blueprint url_prefix with route paths", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "gitreverse-flask-prefix-"));
+  try {
+    await mkdir(path.join(root, "api"), { recursive: true });
+    await writeFile(
+      path.join(root, "api", "users.py"),
+      [
+        'users = Blueprint("users", __name__, url_prefix="/users")',
+        '@users.route("/active")',
+        'def active(): pass',
+        ''
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = await analyzeBehaviorFile(root, "api/users.py", "Flask");
+    assert.deepEqual(result.endpoints.map(({ method, path }) => ({ method, path })), [
+      { method: "ROUTE", path: "/users/active" }
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
