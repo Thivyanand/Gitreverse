@@ -59,17 +59,39 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
   }
 
   if (framework === "Flask" || framework === "FastAPI") {
+    const prefixes = new Map<string, string>();
+    const quote = String.fromCharCode(34, 39);
+    const declarationPattern = framework === "FastAPI"
+      ? /(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*APIRouter\s*\(([^)]*)\)/g
+      : /(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*Blueprint\s*\(([^)]*)\)/g;
+    let declaration: RegExpExecArray | null;
+    while ((declaration = declarationPattern.exec(source))) {
+      const option = framework === "FastAPI" ? "prefix" : "url_prefix";
+      const value = declaration[2].match(new RegExp(option + "\\s*=\\s*[" + quote + "]([^" + quote + "]*)[" + quote + "]"))?.[1];
+      if (value) prefixes.set(declaration[1], value);
+    }
+
+    if (framework === "FastAPI") {
+      const includePattern = /include_router\s*\(\s*([A-Za-z_]\w*)\s*(?:,[^)]*?prefix\s*=\s*["']([^"']*)["'])?[^)]*\)/g;
+      let include: RegExpExecArray | null;
+      while ((include = includePattern.exec(source))) {
+        const combined = [include[2] ?? "", prefixes.get(include[1]) ?? ""].filter(Boolean).join("/").replace(/\/{2,}/g, "/");
+        if (combined) prefixes.set(include[1], combined.startsWith("/") ? combined : "/" + combined);
+      }
+    }
+
     const pattern = framework === "Flask"
-      ? /@(?:[A-Za-z_]\w*)\.(route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g
-      : /@(?:[A-Za-z_]\w*)\.(route|api_route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g;
+      ? /@([A-Za-z_]\w*)\.(route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g
+      : /@([A-Za-z_]\w*)\.(route|api_route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g;
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(source))) {
-      const directMethod = match[1].match(/^(get|post|put|patch|delete)$/);
+      const directMethod = match[2].match(/^(get|post|put|patch|delete)$/);
       const configuredMethods = match[0].match(/\bmethods\s*=\s*\[([^\]]+)\]/)?.[1];
       const methods = configuredMethods
         ? [...configuredMethods.matchAll(/["']([A-Za-z]+)["']/g)].map((item) => item[1])
         : [directMethod?.[1] ?? "ROUTE"];
-      for (const method of methods) add(method, match[2], match.index);
+      const route = [prefixes.get(match[1]) ?? "", match[3]].filter(Boolean).join("/").replace(/\/{2,}/g, "/");
+      for (const method of methods) add(method, route.startsWith("/") ? route : "/" + route, match.index);
     }
   }
 
