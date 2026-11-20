@@ -73,10 +73,24 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
 
     if (framework === "FastAPI") {
       const includePattern = /include_router\s*\(\s*([A-Za-z_]\w*)\s*(?:,[^)]*?prefix\s*=\s*["']([^"']*)["'])?[^)]*\)/g;
-      let include: RegExpExecArray | null;
-      while ((include = includePattern.exec(source))) {
-        const combined = [include[2] ?? "", prefixes.get(include[1]) ?? ""].filter(Boolean).join("/").replace(/\/{2,}/g, "/");
-        if (combined) prefixes.set(include[1], combined.startsWith("/") ? combined : "/" + combined);
+      const includes = [...source.matchAll(includePattern)].map((include) => ({
+        router: include[1],
+        prefix: include[2] ?? ""
+      }));
+      // Resolve chained include_router() mounts until prefixes stop changing.
+      // This supports parent routers included by another router in the same file.
+      for ( (let pass = 0; pass < includes.length; pass++) {
+        let changed = false;
+        for (const include of includes) {
+          const current = prefixes.get(include.router) ?? "";
+          const combined = [include.prefix, current].filter(Boolean).join("/").replace(/\/{2,}/g, "/");
+          const normalized = combined ? (combined.startsWith("/") ? combined : "/" + combined) : "";
+          if (normalized && normalized !== current) {
+            prefixes.set(include.router, normalized);
+            changed = true;
+          }
+        }
+        if (!changed) break;
       }
     }
 
