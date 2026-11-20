@@ -86,7 +86,7 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(source))) {
       const directMethod = match[2].match(/^(get|post|put|patch|delete)$/);
-      const configuredMethods = match[0].match(/\bmethods\s*=\s*\[([^\]]+)\]/)?.[1];
+      const configuredMethods = match[0].match(/\bmethods\s*=\s*[\[({]([^\])}]+)[\])}]/)?.[1];
       const methods = configuredMethods
         ? [...configuredMethods.matchAll(/["']([A-Za-z]+)["']/g)].map((item) => item[1])
         : [directMethod?.[1] ?? "ROUTE"];
