@@ -191,3 +191,24 @@ test("composes Flask blueprint url_prefix with route paths", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("extracts configured Python HTTP methods from tuple and set collections", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "gitreverse-python-method-collections-"));
+  try {
+    await mkdir(path.join(root, "api"), { recursive: true });
+    await writeFile(
+      path.join(root, "api", "routes.py"),
+      '@app.route("/tuple", methods=("GET", "PUT"))\\n@app.route("/set", methods={"POST", "DELETE"})\\n',
+      "utf8"
+    );
+    const result = await analyzeBehaviorFile(root, "api/routes.py", "Flask");
+    assert.deepEqual(result.endpoints.map(({ method, path }) => ({ method, path })), [
+      { method: "GET", path: "/tuple" },
+      { method: "PUT", path: "/tuple" },
+      { method: "POST", path: "/set" },
+      { method: "DELETE", path: "/set" }
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
