@@ -226,7 +226,7 @@ test("resolves named constants for configured Python route methods", async () =>
         '@app.route("/read", methods=READ_METHODS)',
         '@app.route("/write", methods=WRITE_METHODS)',
         ''
-      ].join("\\n"),
+      ].join("\n"),
       "utf8"
     );
     const result = await analyzeBehaviorFile(root, "api/routes.py", "Flask");
