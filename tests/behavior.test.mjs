@@ -212,3 +212,31 @@ test("extracts configured Python HTTP methods from tuple and set collections", a
     await rm(root, { recursive: true, force: true });
   }
 });
+
+
+test("resolves named constants for configured Python route methods", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "gitreverse-python-method-constants-"));
+  try {
+    await mkdir(path.join(root, "api"), { recursive: true });
+    await writeFile(
+      path.join(root, "api", "routes.py"),
+      [
+        'READ_METHODS = ("GET", "HEAD")',
+        'WRITE_METHODS = {"POST", "PATCH"}',
+        '@app.route("/read", methods=READ_METHODS)',
+        '@app.route("/write", methods=WRITE_METHODS)',
+        ''
+      ].join("\\n"),
+      "utf8"
+    );
+    const result = await analyzeBehaviorFile(root, "api/routes.py", "Flask");
+    assert.deepEqual(result.endpoints.map(({ method, path }) => ({ method, path })), [
+      { method: "GET", path: "/read" },
+      { method: "HEAD", path: "/read" },
+      { method: "POST", path: "/write" },
+      { method: "PATCH", path: "/write" }
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
