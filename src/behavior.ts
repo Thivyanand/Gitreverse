@@ -81,7 +81,7 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
     }
 
     const methodConstants = new Map<string, string[]>();
-    const constantPattern = /(?:^|\\n)\\s*([A-Za-z_]\\w*)\\s*=\\s*[\\[({]([^\\])}]+)[\\])}]/g;
+    const constantPattern = /(?:^|\n)\s*([A-Za-z_]\w*)\s*=\s*[\[({]([^\])}]+)[\])}]/g;
     let constant: RegExpExecArray | null;
     while ((constant = constantPattern.exec(source))) {
       const values = [...constant[2].matchAll(/["']([A-Za-z]+)["']/g)].map((item) => item[1]);
@@ -94,7 +94,7 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(source))) {
       const directMethod = match[2].match(/^(get|post|put|patch|delete)$/);
-      const configuredExpression = match[0].match(/\\bmethods\\s*=\\s*([A-Za-z_]\\w*|[\\[({][^\\])}]+[\\])}])/)?.[1];
+      const configuredExpression = match[0].match(/\bmethods\s*=\s*([A-Za-z_]\w*|[\[({][^\])}]+[\])}])/ )?.[1];
       const configuredMethods = configuredExpression
         ? methodConstants.get(configuredExpression) ?? [...configuredExpression.matchAll(/["']([A-Za-z]+)["']/g)].map((item) => item[1])
         : null;
