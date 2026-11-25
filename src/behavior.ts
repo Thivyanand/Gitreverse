@@ -80,15 +80,26 @@ function extractEndpoints(source: string, file: string, framework: string): ApiE
       }
     }
 
+    const methodConstants = new Map<string, string[]>();
+    const constantPattern = /(?:^|\\n)\\s*([A-Za-z_]\\w*)\\s*=\\s*[\\[({]([^\\])}]+)[\\])}]/g;
+    let constant: RegExpExecArray | null;
+    while ((constant = constantPattern.exec(source))) {
+      const values = [...constant[2].matchAll(/["']([A-Za-z]+)["']/g)].map((item) => item[1]);
+      if (values.length) methodConstants.set(constant[1], values);
+    }
+
     const pattern = framework === "Flask"
-      ? /@([A-Za-z_]\w*)\.(route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g
-      : /@([A-Za-z_]\w*)\.(route|api_route|get|post|put|patch|delete)\s*\(\s*["']([^"']+)["']([^)]*)\)/g;
+      ? /@([A-Za-z_]\\w*)\\.(route|get|post|put|patch|delete)\\s*\\(\\s*["']([^"']+)["']([^)]*)\\)/g
+      : /@([A-Za-z_]\\w*)\\.(route|api_route|get|post|put|patch|delete)\\s*\\(\\s*["']([^"']+)["']([^)]*)\\)/g;
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(source))) {
       const directMethod = match[2].match(/^(get|post|put|patch|delete)$/);
-      const configuredMethods = match[0].match(/\bmethods\s*=\s*[\[({]([^\])}]+)[\])}]/)?.[1];
-      const methods = configuredMethods
-        ? [...configuredMethods.matchAll(/["']([A-Za-z]+)["']/g)].map((item) => item[1])
+      const configuredExpression = match[0].match(/\\bmethods\\s*=\\s*([A-Za-z_]\\w*|[\\[({][^\\])}]+[\\])}])/)?.[1];
+      const configuredMethods = configuredExpression
+        ? methodConstants.get(configuredExpression) ?? [...configuredExpression.matchAll(/["']([A-Za-z]+)["']/g)].map((item) => item[1])
+        : null;
+      const methods = configuredMethods?.length
+        ? configuredMethods
         : [directMethod?.[1] ?? "ROUTE"];
       const route = [prefixes.get(match[1]) ?? "", match[3]].filter(Boolean).join("/").replace(/\/{2,}/g, "/");
       for (const method of methods) add(method, route.startsWith("/") ? route : "/" + route, match.index);
